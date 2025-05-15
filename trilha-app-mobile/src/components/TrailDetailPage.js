@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './../App.css'; 
+import jsQR from 'jsqr';
 
 // Dados de exemplo para as trilhas e árvores
 const trailsMasterData = {
@@ -47,11 +48,15 @@ const treeDetailsData = {
   embauba: { name: "Embaúba", scientificName: "Cecropia spp.", details: "Árvore pioneira, de crescimento rápido, facilmente reconhecível por suas folhas grandes e prateadas na face inferior.", audio: "audio_embauba.mp3" },
 };
 
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"; // Updated endpoint
+
+// Replace GEMINI_API_KEY with your actual API key securely
+const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
+
+
 function TrailDetailPage() {
   const { id } = useParams();
   const [trail, setTrail] = useState(null);
-  const [currentPoint, setCurrentPoint] = useState(null);
-  const [scannedTreeInfo, setScannedTreeInfo] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
@@ -65,23 +70,62 @@ function TrailDetailPage() {
     setChatMessages([]);
   }, [id]);
 
-  const handleScanQrCode = (point) => {
-    // SIMULAÇÃO: Em um app real, aqui ocorreria a leitura do QR Code.
-    // O qrId do ponto seria usado para buscar a informação da árvore.
-    alert(`QR Code "${point.qrId}" para "${point.name}" escaneado! (Simulação)`);
-    const treeInfo = treeDetailsData[point.treeInfoKey];
-    if (!treeInfo) {
-      alert(`Informações para "${point.name}" não encontradas.`);
-      setCurrentPoint(point); // Still mark the point as selected
-      setScannedTreeInfo(null); // Ensure info is cleared
-      setShowChatbot(false);
-      setChatMessages([]);
-      return;
+  const handleScanQrCode = async () => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const canvasContext = canvas.getContext('2d');
+
+    const constraints = { video: { facingMode: 'environment' } };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      video.setAttribute('playsinline', ''); // Required for iOS
+      video.play();
+
+      const scan = () => {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code) {
+            alert(`QR Code detected: ${code.data}`);
+            stopStream(stream);
+            processQrCode(code.data);
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+
+      scan();
+    } catch (error) {
+      alert('Error accessing camera: ' + error.message);
     }
-    setCurrentPoint(point);
-    setScannedTreeInfo(treeInfo);
-    setShowChatbot(false); // Reset chat
-    setChatMessages([]);
+
+    const stopStream = (stream) => {
+      stream.getTracks().forEach((track) => track.stop());
+    };
+
+    const processQrCode = (data) => {
+      const point = trail.points.find((p) => p.qrId === data);
+      if (point) {
+        const treeInfo = treeDetailsData[point.treeInfoKey];
+        if (treeInfo) {
+          setCurrentPoint(point);
+          setScannedTreeInfo(treeInfo);
+          setShowChatbot(false);
+          setChatMessages([]);
+        } else {
+          alert('Tree information not found for this QR Code.');
+        }
+      } else {
+        alert('QR Code does not match any known points.');
+      }
+    };
   };
 
   const handleChatToggle = () => {
@@ -95,19 +139,66 @@ function TrailDetailPage() {
     }
   }
 
-  const handleChatSubmit = (e) => {
+  const handleChatSubmit = async (e) => {
     e.preventDefault();
     if (!chatInput.trim() || !scannedTreeInfo) return;
-
+  
     const userMessage = { sender: 'user', text: chatInput };
-    setChatMessages(prevMessages => [...prevMessages, userMessage]);
-    
-    // SIMULAÇÃO de resposta do Chatbot
-    setTimeout(() => {
-      const botResponse = { sender: 'bot', text: `Entendido. Sobre "${chatInput}" referente a ${scannedTreeInfo.name}: esta é uma resposta simulada. Em um app real, eu buscaria informações relevantes.` };
-      setChatMessages(prevMessages => [...prevMessages, botResponse]);
-    }, 1000);
+    setChatMessages((prevMessages) => [...prevMessages, userMessage]);
+  
+    try {
+      const response = await fetch(GEMINI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `Você é um guia botânico. Baseando-se na árvore ${scannedTreeInfo.name} (${scannedTreeInfo.scientificName}): ${scannedTreeInfo.details}. Pergunta do visitante: ${chatInput}`
+                }
+              ]
+            }
+          ]
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui encontrar uma resposta.';
+  
+      const botResponse = { sender: 'bot', text: botText };
+      setChatMessages((prevMessages) => [...prevMessages, botResponse]);
+    } catch (error) {
+      const errorMessage = { sender: 'bot', text: `Erro ao se comunicar com o chatbot: ${error.message}` };
+      setChatMessages((prevMessages) => [...prevMessages, errorMessage]);
+    }
+  
     setChatInput('');
+  };
+  
+
+  const navigateToTreePage = (treeId) => {
+    const tree = trail.points.find((point) => point.id === treeId);
+    if (tree) {
+      const treeInfo = treeDetailsData[tree.treeInfoKey];
+      if (treeInfo) {
+        setCurrentPoint(tree);
+        setScannedTreeInfo(treeInfo);
+        setShowChatbot(false);
+        setChatMessages([]);
+      } else {
+        alert('Tree information not found for this point.');
+      }
+    } else {
+      alert('Tree point not found.');
+    }
   };
 
   if (!trail) {
@@ -128,8 +219,8 @@ function TrailDetailPage() {
           {trail.points.map(point => (
             <li key={point.id} className={`point-item ${currentPoint?.id === point.id ? 'active' : ''}`}>
               <span>{point.name} ({point.qrId})</span>
-              <button onClick={() => handleScanQrCode(point)} className="btn btn-secondary btn-small">
-                Escanear QR
+              <button onClick={() => navigateToTreePage(point.id)} className="btn btn-secondary btn-small">
+                Ver Detalhes
               </button>
             </li>
           ))}
