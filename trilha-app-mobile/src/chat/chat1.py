@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field
 load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
+#resolver isso
 class RespostasArvore(BaseModel):
-    resposta : str
+    resposta : str 
 
 
 llm = ChatGoogleGenerativeAI(
