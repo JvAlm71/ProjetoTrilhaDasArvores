@@ -57,6 +57,8 @@ const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
 function TrailDetailPage() {
   const { id } = useParams();
   const [trail, setTrail] = useState(null);
+  const [currentPoint, setCurrentPoint] = useState(null); // Added
+  const [scannedTreeInfo, setScannedTreeInfo] = useState(null); // Added
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
