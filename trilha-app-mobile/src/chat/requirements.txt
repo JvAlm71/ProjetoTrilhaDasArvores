@@ -1,2 +1,6 @@
-langchain-google-genai
 python-dotenv
+langchain-google-genai
+langchain
+langgraph
+pydantic
+crewai_tools
