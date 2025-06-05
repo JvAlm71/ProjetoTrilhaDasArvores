@@ -1,57 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './../App.css'; 
-import jsQR from 'jsqr';
+import { trailTreeMapping } from '../config/trailTreeMapping';
+import { getTreeByCode } from '../utils/csvParser';
 
-// Dados de exemplo para as trilhas e árvores
-const trailsMasterData = {
-  1: { 
-    id: 1,
-    name: "Trilha das Gigantes", 
-    fullDescription: "Esta trilha leva você a um encontro com as árvores mais majestosas e antigas da ESALQ. Prepare-se para se maravilhar com a grandiosidade da natureza e aprender sobre a história viva que essas árvores representam.",
-    mapImage: "https://via.placeholder.com/800x400.png?text=Mapa+Trilha+Gigantes",
-    points: [
-      { id: "gig1", name: "Jequitibá-Rosa Centenário", qrId: "QR001", treeInfoKey: "jequitiba" },
-      { id: "gig2", name: "Paineira Imponente", qrId: "QR002", treeInfoKey: "paineira" },
-      { id: "gig3", name: "Figueira Matriarca", qrId: "QR003", treeInfoKey: "figueira" },
-    ] 
-  },
-  2: { 
-    id: 2,
-    name: "Trilha das Flores Nativas", 
-    fullDescription: "Um percurso encantador que destaca a beleza e a diversidade das plantas floríferas nativas da região. Ideal para observadores de pássaros e amantes de botânica.",
-    mapImage: "https://via.placeholder.com/800x400.png?text=Mapa+Trilha+Flores",
-    points: [
-      { id: "flo1", name: "Ipê Amarelo Radiante", qrId: "QR004", treeInfoKey: "ipe_amarelo" },
-      { id: "flo2", name: "Manacá-da-Serra Perfumado", qrId: "QR005", treeInfoKey: "manaca" },
-    ]
-  },
-   3: {
-    id: 3,
-    name: "Trilha do Pequeno Explorador",
-    fullDescription: "Uma aventura divertida e educativa para todas as idades, especialmente para crianças. Descubra curiosidades sobre as árvores de forma lúdica.",
-    mapImage: "https://via.placeholder.com/800x400.png?text=Mapa+Trilha+Explorador",
-    points: [
-        { id: "exp1", name: "Quaresmeira Colorida", qrId: "QR006", treeInfoKey: "quaresmeira" },
-        { id: "exp2", name: "Embaúba Prateada", qrId: "QR007", treeInfoKey: "embauba" },
-    ]
-  }
-};
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-const treeDetailsData = {
-  jequitiba: { name: "Jequitibá-Rosa", scientificName: "Cariniana legalis", details: "Uma das maiores árvores da flora brasileira, conhecida por sua longevidade e madeira nobre. Pode atingir alturas impressionantes.", audio: "audio_jequitiba.mp3" },
-  paineira: { name: "Paineira", scientificName: "Ceiba speciosa", details: "Caracteriza-se pelo tronco esverdeado com espinhos e pelas painas que envolvem suas sementes, parecendo algodão.", audio: "audio_paineira.mp3" },
-  figueira: { name: "Figueira", scientificName: "Ficus spp.", details: "Gênero com muitas espécies, famosas por suas raízes aéreas e frutos que alimentam a fauna local.", audio: "audio_figueira.mp3" },
-  ipe_amarelo: { name: "Ipê Amarelo", scientificName: "Handroanthus albus", details: "Símbolo do Brasil, encanta com sua floração amarela vibrante durante o inverno e primavera.", audio: "audio_ipe.mp3" },
-  manaca: { name: "Manacá-da-Serra", scientificName: "Tibouchina mutabilis", details: "Arbusto ou arvoreta que exibe flores que mudam de cor, do branco ao roxo, simultaneamente.", audio: "audio_manaca.mp3" },
-  quaresmeira: { name: "Quaresmeira", scientificName: "Tibouchina granulosa", details: "Árvore ornamental de floração roxa intensa, muito comum na arborização urbana.", audio: "audio_quaresmeira.mp3" },
-  embauba: { name: "Embaúba", scientificName: "Cecropia spp.", details: "Árvore pioneira, de crescimento rápido, facilmente reconhecível por suas folhas grandes e prateadas na face inferior.", audio: "audio_embauba.mp3" },
-};
-
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"; // Updated endpoint
-
-// Replace GEMINI_API_KEY with your actual API key securely
-const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
+// Replace with your actual API key securely  
+// const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
 
 
 function TrailDetailPage() {
@@ -62,72 +18,51 @@ function TrailDetailPage() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
-
   useEffect(() => {
-    const trailData = trailsMasterData[id];
-    setTrail(trailData);
-    setCurrentPoint(null); // Reset point on trail change
+    const trailConfig = trailTreeMapping[id];
+    if (trailConfig) {
+      // Create trail data with points from real CSV data
+      const trailData = {
+        id: parseInt(id),
+        name: trailConfig.name,
+        fullDescription: trailConfig.description,
+        mapImage: `https://via.placeholder.com/800x400.png?text=Mapa+${trailConfig.name.replace(/ /g, '+')}`,
+        points: trailConfig.trees.map(treeConfig => {
+          const treeData = getTreeByCode(treeConfig.csvCode);
+          return {
+            id: treeConfig.csvCode,
+            name: treeData ? treeData.name : 'Árvore não encontrada',
+            qrId: treeConfig.qrId,
+            csvCode: treeConfig.csvCode,
+            treeData: treeData
+          };
+        })
+      };
+      setTrail(trailData);
+    } else {
+      setTrail(null);
+    }
+    setCurrentPoint(null);
     setScannedTreeInfo(null);
     setShowChatbot(false);
     setChatMessages([]);
   }, [id]);
-
   const handleScanQrCode = async () => {
-    const video = document.createElement('video');
-    const canvas = document.createElement('canvas');
-    const canvasContext = canvas.getContext('2d');
-
-    const constraints = { video: { facingMode: 'environment' } };
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
-      video.setAttribute('playsinline', ''); // Required for iOS
-      video.play();
-
-      const scan = () => {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-          const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-          if (code) {
-            alert(`QR Code detected: ${code.data}`);
-            stopStream(stream);
-            processQrCode(code.data);
-          }
-        }
-        requestAnimationFrame(scan);
-      };
-
-      scan();
-    } catch (error) {
-      alert('Error accessing camera: ' + error.message);
-    }
-
-    const stopStream = (stream) => {
-      stream.getTracks().forEach((track) => track.stop());
-    };
-
-    const processQrCode = (data) => {
-      const point = trail.points.find((p) => p.qrId === data);
-      if (point) {
-        const treeInfo = treeDetailsData[point.treeInfoKey];
-        if (treeInfo) {
-          setCurrentPoint(point);
-          setScannedTreeInfo(treeInfo);
-          setShowChatbot(false);
-          setChatMessages([]);
-        } else {
-          alert('Tree information not found for this QR Code.');
-        }
+    // For now, simulate QR code scanning by showing available QR codes
+    const qrCodes = trail.points.map(p => p.qrId).join(', ');
+    const selectedQR = prompt(`Simular escaneamento de QR Code.\nCódigos disponíveis: ${qrCodes}\nDigite um código QR:`);
+    
+    if (selectedQR) {
+      const point = trail.points.find((p) => p.qrId === selectedQR);
+      if (point && point.treeData) {
+        setCurrentPoint(point);
+        setScannedTreeInfo(point.treeData);
+        setShowChatbot(false);
+        setChatMessages([]);
       } else {
-        alert('QR Code does not match any known points.');
+        alert('QR Code não encontrado. Tente: ' + qrCodes);
       }
-    };
+    }
   };
 
   const handleChatToggle = () => {
@@ -185,31 +120,33 @@ function TrailDetailPage() {
     setChatInput('');
   };
   
-
   const navigateToTreePage = (treeId) => {
-    const tree = trail.points.find((point) => point.id === treeId);
-    if (tree) {
-      const treeInfo = treeDetailsData[tree.treeInfoKey];
-      if (treeInfo) {
-        setCurrentPoint(tree);
-        setScannedTreeInfo(treeInfo);
-        setShowChatbot(false);
-        setChatMessages([]);
-      } else {
-        alert('Tree information not found for this point.');
-      }
+    const point = trail.points.find((point) => point.id === treeId);
+    if (point && point.treeData) {
+      setCurrentPoint(point);
+      setScannedTreeInfo(point.treeData);
+      setShowChatbot(false);
+      setChatMessages([]);
     } else {
-      alert('Tree point not found.');
+      alert('Informações da árvore não encontradas para este ponto.');
     }
   };
 
   if (!trail) {
     return <div className="page-container loading">Carregando detalhes da trilha...</div>;
   }
-
   return (
     <div className="page-container trail-detail-page">
       <Link to="/trilhas" className="btn btn-back">‹ Voltar para Trilhas</Link>
+      
+      <button 
+        onClick={handleScanQrCode} 
+        className="btn btn-scan-qr-large"
+        style={{ marginTop: '10px', marginBottom: '20px' }}
+      >
+        📱 Escanear QR Code da Árvore
+      </button>
+
       <h2 className="page-title">{trail.name}</h2>
       <p className="trail-full-description">{trail.fullDescription}</p>
 
@@ -227,19 +164,73 @@ function TrailDetailPage() {
             </li>
           ))}
         </ul>
-      </section>
-
-      {scannedTreeInfo && (
+      </section>      {scannedTreeInfo && (
         <section className="card tree-info-section">
           <h3>Informações sobre: {scannedTreeInfo.name}</h3>
-          <p><strong>Nome Científico:</strong> <em>{scannedTreeInfo.scientificName}</em></p>
-          <p>{scannedTreeInfo.details}</p>
+          <p><strong>Nome Científico:</strong> <em>{scannedTreeInfo.species}</em></p>
+          {scannedTreeInfo.genus && <p><strong>Gênero:</strong> {scannedTreeInfo.genus}</p>}
+          
+          <div className="tree-measurements">
+            <h4>📏 Medidas da Árvore</h4>
+            <p><strong>Altura Geral:</strong> {scannedTreeInfo.height}m</p>
+            {scannedTreeInfo.firstBranchHeight > 0 && (
+              <p><strong>Altura da 1ª Ramificação:</strong> {scannedTreeInfo.firstBranchHeight}m</p>
+            )}
+            {scannedTreeInfo.crownDiameter > 0 && (
+              <p><strong>Diâmetro da Copa:</strong> {scannedTreeInfo.crownDiameter}m</p>
+            )}
+            {scannedTreeInfo.pap > 0 && (
+              <p><strong>PAP (Perímetro à Altura do Peito):</strong> {scannedTreeInfo.pap}m</p>
+            )}
+          </div>
+
+          {scannedTreeInfo.location && (
+            <div className="tree-location">
+              <h4>📍 Localização</h4>
+              <p>{scannedTreeInfo.location}</p>
+              {scannedTreeInfo.latitude !== 0 && scannedTreeInfo.longitude !== 0 && (
+                <p><strong>Coordenadas:</strong> {scannedTreeInfo.latitude.toFixed(6)}, {scannedTreeInfo.longitude.toFixed(6)}</p>
+              )}
+            </div>
+          )}
+
+          {scannedTreeInfo.generalCondition !== 'Não informado' && (
+            <div className="tree-condition">
+              <h4>🌿 Estado Geral</h4>
+              <p><strong>Condição:</strong> {scannedTreeInfo.generalCondition}</p>
+            </div>
+          )}
+
+          {scannedTreeInfo.ecology && scannedTreeInfo.ecology.length > 0 && (
+            <div className="tree-ecology">
+              <h4>🦋 Ecologia</h4>
+              <ul>
+                {scannedTreeInfo.ecology.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {scannedTreeInfo.phenology && scannedTreeInfo.phenology.length > 0 && (
+            <div className="tree-phenology">
+              <h4>🌸 Fenologia</h4>
+              <p>Presença de: {scannedTreeInfo.phenology.join(', ')}</p>
+            </div>
+          )}
+
+          {scannedTreeInfo.observations && (
+            <div className="tree-observations">
+              <h4>📝 Observações</h4>
+              <p>{scannedTreeInfo.observations}</p>
+            </div>
+          )}
           
           <h4><span role="img" aria-label="headphone">🎧</span> Audioguia (Simulado)</h4>
-          <audio controls src={`/audio/${scannedTreeInfo.audio}`} className="audioplayer">
-            Seu navegador não suporta o elemento de áudio. (Arquivo: {scannedTreeInfo.audio})
+          <audio controls src={`/audio/audio_${scannedTreeInfo.code}.mp3`} className="audioplayer">
+            Seu navegador não suporta o elemento de áudio.
           </audio>
-          <p className="simulation-note">(Nota: A funcionalidade de audioguia e os arquivos de áudio são simulados. Adicione os arquivos em `public/audio/`)</p>
+          <p className="simulation-note">(Nota: A funcionalidade de audioguia é simulada. Adicione os arquivos em `public/audio/`)</p>
 
           <button onClick={handleChatToggle} className="btn btn-chat-toggle">
             {showChatbot ? 'Fechar Chatbot' : `Perguntar sobre ${scannedTreeInfo.name}`}

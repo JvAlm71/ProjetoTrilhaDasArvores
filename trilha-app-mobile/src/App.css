@@ -407,6 +407,39 @@ tbody tr:nth-child(even) {
   background-color: #fdfdfd;
 }
 
+/* Tree Information Sections */
+.tree-measurements,
+.tree-location,
+.tree-condition,
+.tree-ecology,
+.tree-phenology,
+.tree-observations {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-left: 4px solid #28a745;
+  border-radius: 4px;
+}
+
+.tree-measurements h4,
+.tree-location h4,
+.tree-condition h4,
+.tree-ecology h4,
+.tree-phenology h4,
+.tree-observations h4 {
+  margin-top: 0;
+  color: #155724;
+}
+
+.tree-ecology ul {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+.tree-ecology li {
+  margin: 3px 0;
+}
+
 /* Footer */
 .footer {
   background-color: #343a40; /* Dark gray footer */
