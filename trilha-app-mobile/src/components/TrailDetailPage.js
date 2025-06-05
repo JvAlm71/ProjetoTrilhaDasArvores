@@ -1,36 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import './../App.css'; 
+import './../App.css';
 import { trailTreeMapping } from '../config/trailTreeMapping';
 import { getTreeByCode } from '../utils/csvParser';
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
-// Replace with your actual API key securely  
-// const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
-
+// const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; // Remember to secure your API key
 
 function TrailDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // id will be a string e.g. "1", "2"
   const [trail, setTrail] = useState(null);
-  const [currentPoint, setCurrentPoint] = useState(null); // Added
-  const [scannedTreeInfo, setScannedTreeInfo] = useState(null); // Added
+  const [currentPoint, setCurrentPoint] = useState(null);
+  const [scannedTreeInfo, setScannedTreeInfo] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
+  const [mapHtmlFile, setMapHtmlFile] = useState(''); // Initialize as empty or a loading state
+
   useEffect(() => {
-    const trailConfig = trailTreeMapping[id];
+    const trailConfig = trailTreeMapping[id]; // id from useParams is a string
     if (trailConfig) {
-      // Create trail data with points from real CSV data
       const trailData = {
-        id: parseInt(id),
+        id: parseInt(id), // Keep this if you use integer IDs elsewhere
         name: trailConfig.name,
         fullDescription: trailConfig.description,
-        mapImage: `https://via.placeholder.com/800x400.png?text=Mapa+${trailConfig.name.replace(/ /g, '+')}`,
         points: trailConfig.trees.map(treeConfig => {
           const treeData = getTreeByCode(treeConfig.csvCode);
           return {
-            id: treeConfig.csvCode,
+            id: treeConfig.csvCode, // This is the tree's ID/code
             name: treeData ? treeData.name : 'Árvore não encontrada',
             qrId: treeConfig.qrId,
             csvCode: treeConfig.csvCode,
@@ -39,16 +36,70 @@ function TrailDetailPage() {
         })
       };
       setTrail(trailData);
+
+      // **DYNAMIC MAP LOADING**
+      // Set the mapHtmlFile based on the trail's id from the URL
+      setMapHtmlFile(`/trail_map_${id}.html`);
+
     } else {
       setTrail(null);
+      setMapHtmlFile(''); // Or a path to a "map not found" html
     }
+    // Reset states when ID changes
     setCurrentPoint(null);
     setScannedTreeInfo(null);
     setShowChatbot(false);
     setChatMessages([]);
-  }, [id]);
+  }, [id]); // useEffect dependency is `id`
+
+  // ... (rest of your component code: handleScanQrCode, handleChatToggle, handleChatSubmit, navigateToTreePage)
+  // Ensure GEMINI_API_KEY is handled securely (e.g. process.env.REACT_APP_GEMINI_API_KEY)
+   const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !scannedTreeInfo) return;
+
+    const userMessage = { sender: 'user', text: chatInput };
+    setChatMessages((prevMessages) => [...prevMessages, userMessage]);
+    setChatInput('');
+
+    const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY; // Use environment variable
+
+    if (!GEMINI_API_KEY) {
+        const botResponse = { sender: 'bot', text: "Erro: API Key do Gemini não configurada corretamente." };
+        setChatMessages((prevMessages) => [...prevMessages, botResponse]);
+        console.error("GEMINI_API_KEY is not set. Please set REACT_APP_GEMINI_API_KEY in your .env file.");
+        return;
+    }
+
+    try {
+      const promptText = `Você é um guia botânico interativo e amigável. As informações disponíveis sobre a árvore são: Nome: ${scannedTreeInfo.name}, Nome Científico: ${scannedTreeInfo.species || scannedTreeInfo.scientificName}, Detalhes adicionais: ${scannedTreeInfo.details || scannedTreeInfo.observations || 'N/A'}. Responda à seguinte pergunta do visitante sobre esta árvore, de forma concisa e informativa: ${chatInput}`;
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API Error Response:", errorData);
+        throw new Error(`Erro na API (${response.status}): ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui processar uma resposta no momento.';
+      const botResponse = { sender: 'bot', text: botText };
+      setChatMessages((prevMessages) => [...prevMessages, botResponse]);
+    } catch (error) {
+      console.error("Chatbot communication error:", error);
+      const errorMessage = { sender: 'bot', text: `Erro ao se comunicar com o chatbot: ${error.message}` };
+      setChatMessages((prevMessages) => [...prevMessages, errorMessage]);
+    }
+  };
+  
   const handleScanQrCode = async () => {
-    // For now, simulate QR code scanning by showing available QR codes
+    if (!trail) return;
     const qrCodes = trail.points.map(p => p.qrId).join(', ');
     const selectedQR = prompt(`Simular escaneamento de QR Code.\nCódigos disponíveis: ${qrCodes}\nDigite um código QR:`);
     
@@ -72,55 +123,12 @@ function TrailDetailPage() {
     }
     setShowChatbot(!showChatbot);
     if (!showChatbot && scannedTreeInfo) { // Opening chat for the first time for this tree
-        setChatMessages([{ sender: 'bot', text: `Olá! Você está vendo informações sobre ${scannedTreeInfo.name}. O que gostaria de saber? (Chat simulado)` }]);
+        setChatMessages([{ sender: 'bot', text: `Olá! Você está vendo informações sobre ${scannedTreeInfo.name}. O que gostaria de saber?` }]);
     }
   }
-
-  const handleChatSubmit = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !scannedTreeInfo) return;
-  
-    const userMessage = { sender: 'user', text: chatInput };
-    setChatMessages((prevMessages) => [...prevMessages, userMessage]);
-  
-    try {
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: `Você é um guia botânico. Baseando-se na árvore ${scannedTreeInfo.name} (${scannedTreeInfo.scientificName}): ${scannedTreeInfo.details}. Pergunta do visitante: ${chatInput}`
-                }
-              ]
-            }
-          ]
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Erro na API: ${response.statusText}`);
-      }
-  
-      const data = await response.json();
-      const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui encontrar uma resposta.';
-  
-      const botResponse = { sender: 'bot', text: botText };
-      setChatMessages((prevMessages) => [...prevMessages, botResponse]);
-    } catch (error) {
-      const errorMessage = { sender: 'bot', text: `Erro ao se comunicar com o chatbot: ${error.message}` };
-      setChatMessages((prevMessages) => [...prevMessages, errorMessage]);
-    }
-  
-    setChatInput('');
-  };
   
   const navigateToTreePage = (treeId) => {
+    if (!trail) return;
     const point = trail.points.find((point) => point.id === treeId);
     if (point && point.treeData) {
       setCurrentPoint(point);
@@ -132,15 +140,25 @@ function TrailDetailPage() {
     }
   };
 
+
   if (!trail) {
-    return <div className="page-container loading">Carregando detalhes da trilha...</div>;
+    return <div className="page-container loading">Carregando detalhes da trilha... Ou trilha não encontrada.</div>;
   }
+  // Make sure mapHtmlFile is set before rendering iframe, or provide a fallback.
+  // The iframe src must not be empty if you want to avoid an attempt to load from the current page's URL.
+  if (!mapHtmlFile && trail) {
+      // This case should ideally be handled if trail exists but map file name couldn't be formed
+      // or if you want a placeholder while the specific map name is being determined.
+      // For now, if trail exists, mapHtmlFile should be set.
+  }
+
+
   return (
     <div className="page-container trail-detail-page">
       <Link to="/trilhas" className="btn btn-back">‹ Voltar para Trilhas</Link>
-      
-      <button 
-        onClick={handleScanQrCode} 
+
+      <button
+        onClick={handleScanQrCode}
         className="btn btn-scan-qr-large"
         style={{ marginTop: '10px', marginBottom: '20px' }}
       >
@@ -152,8 +170,22 @@ function TrailDetailPage() {
 
       <section className="card map-section">
         <h3>Mapa da Trilha e Pontos de Interesse</h3>
-        <img src={trail.mapImage} alt={`Mapa da ${trail.name}`} className="trail-map-image" />
-        <p>Siga os pontos marcados para encontrar os QR Codes e aprender mais:</p>
+        {mapHtmlFile ? (
+          <iframe
+            src={mapHtmlFile}
+            width="100%"
+            height="450"
+            style={{ border: '1px solid #ccc', borderRadius: '4px' }}
+            title={`Mapa da ${trail.name}`}
+            loading="lazy"
+          >
+            Seu navegador não suporta iframes. O mapa para esta trilha pode não estar disponível.
+            Você pode tentar acessá-lo <a href={mapHtmlFile} target="_blank" rel="noopener noreferrer">aqui</a>.
+          </iframe>
+        ) : (
+          <p>Carregando mapa ou mapa não disponível...</p> // Fallback if mapHtmlFile is not yet set
+        )}
+        <p style={{marginTop: '10px'}}>Siga os pontos marcados para encontrar os QR Codes e aprender mais:</p>
         <ul className="points-list">
           {trail.points.map(point => (
             <li key={point.id} className={`point-item ${currentPoint?.id === point.id ? 'active' : ''}`}>
@@ -164,15 +196,18 @@ function TrailDetailPage() {
             </li>
           ))}
         </ul>
-      </section>      {scannedTreeInfo && (
+      </section>
+
+      {/* ... (Rest of your JSX for tree info and chatbot) ... */}
+      {scannedTreeInfo && (
         <section className="card tree-info-section">
           <h3>Informações sobre: {scannedTreeInfo.name}</h3>
-          <p><strong>Nome Científico:</strong> <em>{scannedTreeInfo.species}</em></p>
+          <p><strong>Nome Científico:</strong> <em>{scannedTreeInfo.species || scannedTreeInfo.scientificName}</em></p>
           {scannedTreeInfo.genus && <p><strong>Gênero:</strong> {scannedTreeInfo.genus}</p>}
           
           <div className="tree-measurements">
             <h4>📏 Medidas da Árvore</h4>
-            <p><strong>Altura Geral:</strong> {scannedTreeInfo.height}m</p>
+            <p><strong>Altura Geral:</strong> {scannedTreeInfo.height || 'N/A'}m</p>
             {scannedTreeInfo.firstBranchHeight > 0 && (
               <p><strong>Altura da 1ª Ramificação:</strong> {scannedTreeInfo.firstBranchHeight}m</p>
             )}
@@ -188,13 +223,14 @@ function TrailDetailPage() {
             <div className="tree-location">
               <h4>📍 Localização</h4>
               <p>{scannedTreeInfo.location}</p>
-              {scannedTreeInfo.latitude !== 0 && scannedTreeInfo.longitude !== 0 && (
-                <p><strong>Coordenadas:</strong> {scannedTreeInfo.latitude.toFixed(6)}, {scannedTreeInfo.longitude.toFixed(6)}</p>
+              {scannedTreeInfo.latitude && scannedTreeInfo.longitude &&
+               scannedTreeInfo.latitude !== 0 && scannedTreeInfo.longitude !== 0 && (
+                <p><strong>Coordenadas:</strong> {Number(scannedTreeInfo.latitude).toFixed(6)}, {Number(scannedTreeInfo.longitude).toFixed(6)}</p>
               )}
             </div>
           )}
 
-          {scannedTreeInfo.generalCondition !== 'Não informado' && (
+          {scannedTreeInfo.generalCondition && scannedTreeInfo.generalCondition !== 'Não informado' && (
             <div className="tree-condition">
               <h4>🌿 Estado Geral</h4>
               <p><strong>Condição:</strong> {scannedTreeInfo.generalCondition}</p>
@@ -254,6 +290,7 @@ function TrailDetailPage() {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Digite sua pergunta..."
+              aria-label="Pergunta para o chatbot"
             />
             <button type="submit" className="btn">Enviar</button>
           </form>

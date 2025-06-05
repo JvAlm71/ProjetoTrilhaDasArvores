@@ -12,105 +12,123 @@ const trailsData = [
 
 const TrailsListPage = () => {
   const [isScanning, setIsScanning] = useState(false);
-  const videoRef = useRef(null); // Referência para o elemento <video>
-  const streamRef = useRef(null); // Referência para o MediaStream da câmera
-  const animationFrameIdRef = useRef(null); // Referência para o ID do requestAnimationFrame
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const animationFrameIdRef = useRef(null);
   
 
-  // Função para navegar após detecção do QR Code
   const navigateToTreePage = (qrData) => {
-    // Assume que qrData é o ID da trilha. Ajuste conforme a estrutura dos seus dados de QR Code.
+    console.log("Navegando com os dados do QR Code:", qrData);
     const trailId = parseInt(qrData, 10);
     const trail = trailsData.find((t) => t.id === trailId);
 
     if (trail) {
-      // Navega para a página da trilha.
-      // Se o QR Code identificar um PONTO específico, a URL e lógica podem precisar ser diferentes.
-      // Ex: window.location.href = `/trilha/${trail.id}/ponto/${qrData}`;
       window.location.href = `/trilha/${trail.id}`;
     } else {
       alert('QR Code não corresponde a nenhuma trilha conhecida.');
     }
-    stopScan(); // Para o scanner após a tentativa de navegação
+    stopScan();
   };
 
-  // Função para parar o scanner e liberar recursos
   const stopScan = () => {
+    console.log("Parando o scanner...");
     if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current); // Cancela o loop de escaneamento
+      cancelAnimationFrame(animationFrameIdRef.current);
       animationFrameIdRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop()); // Para todas as trilhas (vídeo)
-      streamRef.current = null; // Limpa a referência do stream
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
     if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject = null; // Remove o stream do elemento de vídeo
-      // Pausa o vídeo e remove a fonte para liberar recursos
+      videoRef.current.srcObject = null;
       videoRef.current.pause();
-      videoRef.current.removeAttribute('src'); // Limpa o atributo src
-      videoRef.current.load(); // Reseta o player de vídeo
+      videoRef.current.removeAttribute('src');
+      videoRef.current.load();
     }
-    setIsScanning(false); // Esconde o overlay do scanner
+    setIsScanning(false);
+    console.log("Scanner parado.");
   };
 
-  // Função que realiza o escaneamento do QR Code recursivamente
   const scanQrCode = () => {
-    // Verifica se o scanner ainda deve estar ativo e se o vídeo está pronto
     if (!isScanning || !videoRef.current || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
-      if (isScanning) { // Só agenda o próximo frame se ainda estiver escaneando
+      // console.log("Scanner não está pronto ou vídeo não tem dados suficientes."); // Log opcional para não poluir muito
+      if (isScanning) {
           animationFrameIdRef.current = requestAnimationFrame(scanQrCode);
       }
       return;
     }
 
     const canvas = document.createElement('canvas');
-    // O { willReadFrequently: true } é uma dica de otimização para o getContext
     const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
 
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
 
-    // Verifica se as dimensões são válidas antes de desenhar
-    if (canvas.width > 0 && canvas.height > 0) {
-        canvasContext.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert", // Opção para jsQR, pode tentar "invertFirst" se tiver problemas
-        });
+    // Log para verificar as dimensões
+    // Removido o log daqui para evitar poluição excessiva, pois é chamado em loop.
+    // Se precisar, descomente a linha abaixo:
+    // console.log(`Dimensões do Canvas para scan: Largura=${canvas.width}, Altura=${canvas.height}`);
 
-        if (code && code.data) { // Verifica se um código foi encontrado e tem dados
-            alert(`QR Code detectado: ${code.data}`);
-            navigateToTreePage(code.data); // Processa o QR Code
-            // stopScan() é chamado dentro de navigateToTreePage, então não precisa aqui.
-            return; // Para o loop de escaneamento aqui
+
+    if (canvas.width > 0 && canvas.height > 0) {
+        try {
+            canvasContext.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert", 
+            });
+
+            if (code && code.data) {
+                console.log("QR Code DETECTADO:", code.data); // Log importante!
+                alert(`QR Code detectado: ${code.data}`); // Usar alert para teste imediato
+                navigateToTreePage(code.data); 
+                return; 
+            }
+            // else {
+                // console.log("Nenhum QR Code detectado neste frame."); // Log opcional
+            // }
+        } catch (error) {
+            console.error("Erro durante o processamento da imagem com jsQR:", error);
+            // Considerar se quer parar o scan ou apenas logar e continuar
+        }
+    } else {
+        // Log apenas se as dimensões mudarem para inválidas ou na primeira vez
+        if (animationFrameIdRef.current % 100 === 0) { // Log a cada 100 frames para não poluir
+            console.warn(`Dimensões do canvas inválidas para processamento: L=${canvas.width}, H=${canvas.height}`);
         }
     }
-    // Se nenhum código foi encontrado ou as dimensões não eram válidas, continua escaneando
-    animationFrameIdRef.current = requestAnimationFrame(scanQrCode);
+    
+    if (isScanning) { // Garante que só continue se ainda estiver escaneando
+        animationFrameIdRef.current = requestAnimationFrame(scanQrCode);
+    }
   };
 
-  // Função chamada ao clicar no botão "Escanear QR Code"
   const handleScanQrCode = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       alert('Seu navegador não suporta o acesso à câmera.');
       return;
     }
 
-    setIsScanning(true); // Mostra o overlay do scanner
+    setIsScanning(true); 
+    console.log("Tentando acessar a câmera...");
 
-    const constraints = { video: { facingMode: 'environment' } }; // Usa a câmera traseira
+    const constraints = { video: { facingMode: 'environment' } }; 
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream; // Guarda o stream
+      streamRef.current = stream; 
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Evento 'onloadedmetadata' é importante para garantir que as dimensões do vídeo (videoWidth, videoHeight) estejam disponíveis.
         videoRef.current.onloadedmetadata = () => {
+            console.log(`Metadados do vídeo carregados. Dimensões nativas: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}. Tentando tocar o vídeo...`);
             videoRef.current.play().then(() => {
-                 // Só inicia o scanQrCode depois que o vídeo realmente começou a tocar
+                console.log("Vídeo tocando. Iniciando escaneamento de QR Code.");
+                // Limpa qualquer frame de animação anterior antes de iniciar um novo
+                if (animationFrameIdRef.current) {
+                    cancelAnimationFrame(animationFrameIdRef.current);
+                }
                 animationFrameIdRef.current = requestAnimationFrame(scanQrCode);
             }).catch(playError => {
                 console.error("Erro ao tentar tocar o vídeo:", playError);
@@ -118,14 +136,14 @@ const TrailsListPage = () => {
                 stopScan();
             });
         };
-        // Adiciona um manipulador de erro para o elemento de vídeo também
         videoRef.current.onerror = () => {
+            console.error("Ocorreu um erro com o elemento de vídeo da câmera.");
             alert("Ocorreu um erro com o vídeo da câmera. Tente novamente.");
             stopScan();
         };
       }
     } catch (error) {
-      console.error("Erro ao acessar a câmera:", error);
+      console.error("Erro ao acessar a câmera:", error.name, error.message);
       let userMessage = 'Erro ao acessar a câmera: ';
       if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
         userMessage += "Permissão para acessar a câmera foi negada. Verifique as configurações do seu navegador.";
@@ -133,29 +151,26 @@ const TrailsListPage = () => {
         userMessage += "Nenhuma câmera compatível foi encontrada.";
       } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
         userMessage += "A câmera pode já estar em uso ou houve um problema ao iniciá-la.";
-      }
-      else {
-        userMessage += error.message;
+      } else {
+        userMessage += error.message; // Mantenha apenas a mensagem de erro para outros casos
       }
       alert(userMessage);
-      stopScan(); // Garante que o scanner seja fechado em caso de erro
+      stopScan(); 
     }
   };
 
   useEffect(() => {
     return () => {
-      stopScan(); // Chama stopScan quando o componente for desmontado
+      console.log("Componente TrailsListPage desmontando. Parando o scanner.");
+      stopScan(); 
     };
-  }, []); // O array vazio como segundo argumento significa que este efeito roda apenas ao montar e desmontar o componente
+  }, []);
 
   return (
     <div className="page-container">
-      {/* Scanner de QR Code - Modal/Overlay */}
       {isScanning && (
-        // Adicionado onClick no overlay para fechar clicando fora da área branca (no fundo escuro)
         <div className="qr-scanner-overlay" onClick={(e) => { if (e.target === e.currentTarget) stopScan();}}>
           <div className="qr-scanner-container">
-            {/* `playsInline` é importante para iOS. `muted` e `autoPlay` podem ajudar. */}
             <video ref={videoRef} className="qr-video-element" playsInline muted autoPlay></video>
             <p>Aponte a câmera para o QR Code.</p>
             <button onClick={stopScan} className="btn btn-secondary">Cancelar</button>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_8be057c7b778f4f3cbc95d65e48e3c40 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_8be057c7b778f4f3cbc95d65e48e3c40" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_8be057c7b778f4f3cbc95d65e48e3c40 = L.map(
+                "map_8be057c7b778f4f3cbc95d65e48e3c40",
+                {
+                    center: [-22.70995, -47.632774],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 19,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_c22446884b8505ad087a59a8a1f1ddd0 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_c22446884b8505ad087a59a8a1f1ddd0.addTo(map_8be057c7b778f4f3cbc95d65e48e3c40);
+        
+    
+            var marker_9ca09ae40d609f55cccf1eb473c4ee09 = L.marker(
+                [-22.70995, -47.632774],
+                {
+}
+            ).addTo(map_8be057c7b778f4f3cbc95d65e48e3c40);
+        
+    
+        var popup_f5350fd6756ab3e303380ab907002b5d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_8d1317b09210285c1899be9bae1d63f2 = $(`<div id="html_8d1317b09210285c1899be9bae1d63f2" style="width: 100.0%; height: 100.0%;">Ponto A (Exemplo)</div>`)[0];
+                popup_f5350fd6756ab3e303380ab907002b5d.setContent(html_8d1317b09210285c1899be9bae1d63f2);
+            
+        
+
+        marker_9ca09ae40d609f55cccf1eb473c4ee09.bindPopup(popup_f5350fd6756ab3e303380ab907002b5d)
+        ;
+
+        
+    
+    
+            marker_9ca09ae40d609f55cccf1eb473c4ee09.bindTooltip(
+                `<div>
+                     Ponto A (Exemplo)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_44586f86e413d807814da5db05cf11bb = L.marker(
+                [-22.709978, -47.632765],
+                {
+}
+            ).addTo(map_8be057c7b778f4f3cbc95d65e48e3c40);
+        
+    
+        var popup_0f4f647cd82b36f57ec87578631adcc5 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_88937f81601c341233e078a223284b1c = $(`<div id="html_88937f81601c341233e078a223284b1c" style="width: 100.0%; height: 100.0%;">Ponto B (Exemplo)</div>`)[0];
+                popup_0f4f647cd82b36f57ec87578631adcc5.setContent(html_88937f81601c341233e078a223284b1c);
+            
+        
+
+        marker_44586f86e413d807814da5db05cf11bb.bindPopup(popup_0f4f647cd82b36f57ec87578631adcc5)
+        ;
+
+        
+    
+    
+            marker_44586f86e413d807814da5db05cf11bb.bindTooltip(
+                `<div>
+                     Ponto B (Exemplo)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_ce3eeca41f5b9b6beab3b948cc6500cd = L.marker(
+                [-22.71005, -47.632737],
+                {
+}
+            ).addTo(map_8be057c7b778f4f3cbc95d65e48e3c40);
+        
+    
+        var popup_22d5f84734d4cfdf87aa6ec2a5d58374 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_788a1d8397c6097e13defd7086f040e5 = $(`<div id="html_788a1d8397c6097e13defd7086f040e5" style="width: 100.0%; height: 100.0%;">Ponto C (Exemplo)</div>`)[0];
+                popup_22d5f84734d4cfdf87aa6ec2a5d58374.setContent(html_788a1d8397c6097e13defd7086f040e5);
+            
+        
+
+        marker_ce3eeca41f5b9b6beab3b948cc6500cd.bindPopup(popup_22d5f84734d4cfdf87aa6ec2a5d58374)
+        ;
+
+        
+    
+    
+            marker_ce3eeca41f5b9b6beab3b948cc6500cd.bindTooltip(
+                `<div>
+                     Ponto C (Exemplo)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>
