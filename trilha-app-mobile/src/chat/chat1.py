@@ -5,7 +5,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain.tools import Tool
 from pydantic import BaseModel
 from crewai_tools import ScrapeWebsiteTool
-from tools import scrape_websites
+from .tools import scrape_websites
 
 
 load_dotenv()
