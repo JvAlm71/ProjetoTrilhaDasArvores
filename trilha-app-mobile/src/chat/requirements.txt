@@ -4,3 +4,4 @@ langchain
 langgraph
 pydantic
 crewai_tools
+Flask-Cors
