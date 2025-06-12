@@ -26,7 +26,7 @@ function ProjectInfoPage() {
   const integrantes = [
     { nome: "Daniel Filho", nusp: "Não informado" },
     { nome: "Jean Carlos Pereira Cassiano", nusp: "Não informado" },
-    { nome: "João Victor de Almeida", nusp: "Não informado" },
+    { nome: "João Victor de Almeida", nusp: "13695424" },
     { nome: "Karine Cerqueira Nascimento", nusp: "13718404" },
     { nome: "Lucas Corlete Alves de Melo", nusp: "13676461" },
     { nome: "Lucas Fernandes", nusp: "11800389" },

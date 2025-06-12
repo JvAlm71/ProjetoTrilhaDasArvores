@@ -4,6 +4,7 @@ import HomePage from './components/HomePage';
 import TrailsListPage from './components/TrailsListPage';
 import TrailDetailPage from './components/TrailDetailPage';
 import ProjectInfoPage from './components/ProjectInfoPage';
+import ChatWidget from './components/ChatWidget';
 import './App.css';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <footer className="footer">
           <p>&copy; {new Date().getFullYear()} TrilhaApp - Equipe Lobo</p>
         </footer>
+        <ChatWidget />
       </div>
     </Router>
   );

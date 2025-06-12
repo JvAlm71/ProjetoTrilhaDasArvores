@@ -1,0 +1,29 @@
+services:
+  # Front-end React
+  client:
+    container_name: chatbot_client
+    build:
+      context: ./trilha-app-mobile
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./trilha-app-mobile:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+
+  # Chatbot Flask (sem DB)
+  api:
+    container_name: chatbot_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./trilha-app-mobile/src/chat:/app
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}

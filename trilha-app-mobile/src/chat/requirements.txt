@@ -1,0 +1,7 @@
+python-dotenv
+langchain-google-genai
+langchain
+langgraph
+pydantic
+crewai_tools
+Flask-Cors
