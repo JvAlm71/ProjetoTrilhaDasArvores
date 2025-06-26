@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './../App.css';
+import jsQR from 'jsqr';
 import { trailTreeMapping } from '../config/trailTreeMapping';
 import { getTreeByCode } from '../utils/csvParser';
 
@@ -16,6 +17,9 @@ function TrailDetailPage() {
   const [chatInput, setChatInput] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
   const [mapHtmlFile, setMapHtmlFile] = useState(''); // Initialize as empty or a loading state
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     const trailConfig = trailTreeMapping[id]; // id from useParams is a string
@@ -99,21 +103,76 @@ function TrailDetailPage() {
   };
   
   const handleScanQrCode = async () => {
-    if (!trail) return;
-    const qrCodes = trail.points.map(p => p.qrId).join(', ');
-    const selectedQR = prompt(`Simular escaneamento de QR Code.\nCódigos disponíveis: ${qrCodes}\nDigite um código QR:`);
-    
-    if (selectedQR) {
-      const point = trail.points.find((p) => p.qrId === selectedQR);
-      if (point && point.treeData) {
-        setCurrentPoint(point);
-        setScannedTreeInfo(point.treeData);
-        setShowChatbot(false);
-        setChatMessages([]);
-      } else {
-        alert('QR Code não encontrado. Tente: ' + qrCodes);
+    setCameraActive(true);
+
+    // Wait for the camera and canvas elements to render
+    setTimeout(async () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      if (!canvas || !video) {
+        alert('Camera or canvas element is not properly initialized.');
+        setCameraActive(false);
+        return;
       }
-    }
+
+      const canvasContext = canvas.getContext('2d');
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.setAttribute('playsinline', '');
+        video.play();
+
+        const scan = () => {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+              alert(`QR Code detected: ${code.data}`);
+              stopStream(stream);
+              processQrCode(code.data);
+            }
+          }
+          requestAnimationFrame(scan);
+        };
+
+        scan();
+      } catch (error) {
+        alert('Error accessing camera: ' + error.message);
+        setCameraActive(false);
+      }
+
+      const stopStream = (stream) => {
+        stream.getTracks().forEach((track) => track.stop());
+        setCameraActive(false);
+      };
+
+      const processQrCode = (data) => {
+        const point = trail.points.find((p) => p.qrId === data);
+        if (point && point.treeData) {
+          setCurrentPoint(point);
+          setScannedTreeInfo(point.treeData);
+          setShowChatbot(false);
+          setChatMessages([]);
+        } else {
+          alert('QR Code não corresponde a nenhum ponto conhecido ou dados da árvore não encontrados.');
+        }
+      };
+    }, 100); // Delay to ensure elements are rendered
   };
 
   const handleChatToggle = () => {
@@ -165,38 +224,49 @@ function TrailDetailPage() {
         📱 Escanear QR Code da Árvore
       </button>
 
-      <h2 className="page-title">{trail.name}</h2>
-      <p className="trail-full-description">{trail.fullDescription}</p>
+      {cameraActive && (
+        <div className="camera-container">
+          <video ref={videoRef} className="camera-feed" />
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+        </div>
+      )}
 
-      <section className="card map-section">
-        <h3>Mapa da Trilha e Pontos de Interesse</h3>
-        {mapHtmlFile ? (
-          <iframe
-            src={mapHtmlFile}
-            width="100%"
-            height="450"
-            style={{ border: '1px solid #ccc', borderRadius: '4px' }}
-            title={`Mapa da ${trail.name}`}
-            loading="lazy"
-          >
-            Seu navegador não suporta iframes. O mapa para esta trilha pode não estar disponível.
-            Você pode tentar acessá-lo <a href={mapHtmlFile} target="_blank" rel="noopener noreferrer">aqui</a>.
-          </iframe>
-        ) : (
-          <p>Carregando mapa ou mapa não disponível...</p> // Fallback if mapHtmlFile is not yet set
-        )}
-        <p style={{marginTop: '10px'}}>Siga os pontos marcados para encontrar os QR Codes e aprender mais:</p>
-        <ul className="points-list">
-          {trail.points.map(point => (
-            <li key={point.id} className={`point-item ${currentPoint?.id === point.id ? 'active' : ''}`}>
-              <span>{point.name} ({point.qrId})</span>
-              <button onClick={() => navigateToTreePage(point.id)} className="btn btn-secondary btn-small">
-                Ver Detalhes
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {trail && (
+        <>
+          <h2 className="page-title">{trail.name}</h2>
+          <p className="trail-fullDescription">{trail.fullDescription}</p>
+
+          <section className="card map-section">
+            <h3>Mapa da Trilha e Pontos de Interesse</h3>
+            {mapHtmlFile ? (
+              <iframe
+                src={mapHtmlFile}
+                width="100%"
+                height="450"
+                style={{ border: '1px solid #ccc', borderRadius: '4px' }}
+                title={`Mapa da ${trail.name}`}
+                loading="lazy"
+              >
+                Seu navegador não suporta iframes. O mapa para esta trilha pode não estar disponível.
+                Você pode tentar acessá-lo <a href={mapHtmlFile} target="_blank" rel="noopener noreferrer">aqui</a>.
+              </iframe>
+            ) : (
+              <p>Carregando mapa ou mapa não disponível...</p> // Fallback if mapHtmlFile is not yet set
+            )}
+            <p style={{marginTop: '10px'}}>Siga os pontos marcados para encontrar os QR Codes e aprender mais:</p>
+            <ul className="points-list">
+              {trail.points.map(point => (
+                <li key={point.id} className={`point-item ${currentPoint?.id === point.id ? 'active' : ''}`}>
+                  <span>{point.name} ({point.qrId})</span>
+                  <button onClick={() => navigateToTreePage(point.id)} className="btn btn-secondary btn-small">
+                    Ver Detalhes
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
 
       {/* ... (Rest of your JSX for tree info and chatbot) ... */}
       {scannedTreeInfo && (
