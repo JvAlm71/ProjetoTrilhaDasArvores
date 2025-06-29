@@ -7,8 +7,8 @@ import jsQR from 'jsqr';
 const trailsData = [
   {
     id: 1,
-    name: "Trilha de Árvores Medicinais",
-    description: "Explore espécies medicinais e conheça a diversidade botânica da ESALQ.",
+    name: "Trilha no Gramadão",
+    description: "Explore espécies e conheça a diversidade botânica da ESALQ.",
     distance: "1.27 km",
     qrCodes: 21,
     image: "/esalq.jpg" 

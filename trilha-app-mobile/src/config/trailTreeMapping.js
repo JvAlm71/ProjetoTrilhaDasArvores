@@ -3,12 +3,29 @@
 
 export const trailTreeMapping = {
   1: { // Trilha das Gigantes
-    name: "Trilha das Gigantes",
+    name: "Trilha no Gramadão",
     description: "Esta trilha leva você a um encontro com as árvores mais majestosas e antigas da ESALQ.",
     trees: [
-      { csvCode: "5402", qrId: "QR001" }, // Jerivá - 12m height
-      { csvCode: "5404", qrId: "QR002" }, // Mangueira - 8m height
-      { csvCode: "5405", qrId: "QR003" }, // Jacarandá-mimoso - 6m height
+      { csvCode: "3481", qrId: "725" },
+      { csvCode: "4929", qrId: "702" },
+      { csvCode: "4928", qrId: "701" },
+      { csvCode: "5311", qrId: "5488" },
+      { csvCode: "4930", qrId: "703" },
+      { csvCode: "4927", qrId: "699" },
+      { csvCode: "5310", qrId: "5487" },
+      { csvCode: "4916", qrId: "684" },
+      { csvCode: "4915", qrId: "683" },
+      { csvCode: "4910", qrId: "677" },
+      { csvCode: "4914", qrId: "682" },
+      { csvCode: "5862", qrId: "5500" },
+      { csvCode: "3633", qrId: "711" },
+      { csvCode: "4922", qrId: "692" },
+      { csvCode: "4911", qrId: "678" },
+      { csvCode: "4912", qrId: "679" },
+      { csvCode: "4926", qrId: "698" },
+      { csvCode: "5744", qrId: "5507" },
+      { csvCode: "5860", qrId: "5498" },
+      { csvCode: "5600", qrId: "5501" },
     ]
   },
   2: { // Trilha das Flores Nativas

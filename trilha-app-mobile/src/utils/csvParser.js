@@ -1,11 +1,29 @@
 // Sample tree data extracted from the CSV file for demonstration
 // In a real implementation, you would parse the actual CSV file
 const sampleTreeData = `Código,Nome,espécie,Altura Geral,Altura da 1a ramificação,Diâmetro copa,PAP,Localização área,Observacao,Latitude,Longitude
-5402,Jerivá,Syagrus romanzoffiana,12,0,5,0.75,Guarita Monte Alegre,,-22.71173575,-47.63148586
-5403,Tipuana,Tipuana tipu,6,2,2,0.56,Gramadão Central,,-22.70995046,-47.63277402
-5404,Mangueira,Mangifera indica,8,2.3,1.2,0.26,Gramadão Central,,-22.70997769,-47.63276481
-5405,Jacarandá-mimoso,Jacaranda mimosifolia,6,1.7,1.5,0.33,Gramadão Central,,-22.71005036,-47.63273701
-5406,Não identificado,Não identificado,6,2.1,1.5,0.3,Gramadão Central,,-22.71003183,-47.63276585`;
+3481,Pinheiro do paraná,,10.5,0,4,1.200000048,Gramadão Central,,-22.70956252,-47.63221199
+4929,Não identificado,,10,2.099999905,5,1.440000057,Gramadão Central,,-22.70956188,-47.6322509
+4928,Pata-de-vaca,,6.5,2,5,0.7900000215,Gramadão Central,,-22.70955206,-47.63229936
+5311,Arariba rosa,,6.5,4,2,0.2899999917,Gramadão Central,,-22.70956028,-47.63234817
+4930,Cedro rosa,,20,2.799999952,7.5,1.899999976,Gramadão Central,,-22.70956818,-47.63241643
+4927,Arariba rosa,,8,4.5,4.5,0.7200000286,Gramadão Central,,-22.70959445,-47.63246558
+5310,Morta,,9,3.5,3,0.4099999964,Gramadão Central,,-22.70962185,-47.63244664
+4916,Pau jacaré,,3,0,3.25,0.3899999857,Gramadão Central,,-22.70962105,-47.63249528
+4915,Pau jacaré,,5,0,4.389999866,0.9499999881,Gramadão Central,MORTA,-22.70964828,-47.63248607
+4910,Palmeira,,16,0,2,0.5299999714,Gramadão Central,,-22.70966665,-47.63246696
+4914,Ipê roxo,,10,1.700000048,4,0.4600000083,Gramadão Central,,-22.70968502,-47.63244785
+5862,Catiguá,,9,2.799999952,6,0.4499999881,Gramadão Central,,-22.70971506,-47.63238584
+3633,Saguaragi,,14,5.300000191,5,1.049999952,Gramadão Central,,-22.70971385,-47.63234138
+4922,Não identificado,,13,5,3,0.349999994,Gramadão Central,,-22.70972015,-47.6325069
+4911,Ipê-amarelo,,13,4.5,3,0.7300000191,Gramadão Central,,-22.70972063,-47.63247772
+4912,Alecrim-de-campinas,,12,1.75,2.5,0.5199999809,Gramadão Central,,-22.70973868,-47.63247807
+4926,Cordia,,11,2.299999952,4,0.4699999988,Gramadão Central,,-22.70975721,-47.63244923
+5744,Tipuana,,14,0,12,2.799999952,Gramadão Central,,-22.70976032,-47.63241758
+5860,Não identificado,,12,3.5,3.5,0.3899999857,Gramadão Central,,-22.70977476,-47.63239586
+5600,Jatobá,,9.5,3.799999952,1,0.8399999738,Gramadão Central,,-22.7097796,-47.63234277
+`;
+
+
 
 // Parse CSV data and create a lookup map by tree code
 export const parseTreeData = () => {
