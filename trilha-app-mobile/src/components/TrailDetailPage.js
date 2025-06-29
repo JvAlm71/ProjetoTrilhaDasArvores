@@ -6,8 +6,8 @@ import { trailTreeMapping } from '../config/trailTreeMapping';
 import { getTreeByCode } from '../utils/csvParser';
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-// const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; // Remember to secure your API key
-
+// const GEMINI_API_KEY = "AIzaSyAOM2B1asxKdp1SFgid5ALvaCUTA2pqmH4"; 
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 function TrailDetailPage() {
   const { id } = useParams(); // id will be a string e.g. "1", "2"
   const [trail, setTrail] = useState(null);
@@ -66,7 +66,6 @@ function TrailDetailPage() {
     setChatMessages((prevMessages) => [...prevMessages, userMessage]);
     setChatInput('');
 
-    const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY; // Use environment variable
 
     if (!GEMINI_API_KEY) {
         const botResponse = { sender: 'bot', text: "Erro: API Key do Gemini não configurada corretamente." };
