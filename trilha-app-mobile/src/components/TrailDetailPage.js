@@ -40,7 +40,6 @@ function TrailDetailPage() {
       };
       setTrail(trailData);
 
-      // **DYNAMIC MAP LOADING**
       // Set the mapHtmlFile based on the trail's id from the URL
       setMapHtmlFile(`/trail_map_${id}.html`);
 
