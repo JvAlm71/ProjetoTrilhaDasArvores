@@ -3,7 +3,7 @@
 
 **Site em produção:** [https://trilha-arvores.web.app/trilha/1](https://trilha-arvores.web.app/trilha/1)
 
-Projeto desenvolvido pela **Equipe LOBO** para a disciplina *SSC0620 - Engenharia de Software* (1º semestre de 2025 - USP/ESALQ), com o objetivo de tornar a Trilha das Árvores mais **acessível, interativa e educativa** para a comunidade de Piracicaba e seus visitantes.
+Projeto desenvolvido pela **Equipe LOBO** para a disciplina *SSC0620 - Engenharia de Software* (1º semestre de 2025 - USP), com o objetivo de tornar a Trilha das Árvores mais **acessível, interativa e educativa** para a comunidade de Piracicaba e seus visitantes.
 
 ---
 
@@ -90,8 +90,3 @@ O projeto já possui uma versão funcional publicada, mas ainda há pontos a ser
 - 📂 [Google Drive com documentação](https://drive.google.com/drive/folders/1Rdqi7YwDdrNkCKRUEGQCMgKggLxebEJb)
 - 📋 [Trello - Gestão Scrum](https://trello.com/b/6deaKROR/eng-software-2025-scrum)
 
----
-
-## 🙌 Agradecimentos
-
-Agradecemos à Profa. Luciana Duque Silva pela orientação e parceria no desenvolvimento de uma solução com impacto social e educacional real.
